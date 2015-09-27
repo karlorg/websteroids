@@ -44,10 +44,14 @@
 
     var frameRate = 30;
     var frameInterval = 1000/frameRate;
+    var bulletDelay = 1000 / 3;  // bullets/ms
+    var bulletLifespan = 600;  // ms
+    var bulletSpeed = 800 / frameRate;  // px/frame
     var playerAccel = 400 / (frameRate * frameRate);  // px/frame^2
     var playerMaxSpeed = 600 / frameRate;  // px/frame
 
-    var gameState = { player: { x: 400, y: 300, rot: 0, vel: [0.0, 0.0] } };
+    var gameState = { player: { x: 400, y: 300, rot: 0, vel: [0.0, 0.0] },
+                      bullets: [] };
 
     var renderer = PIXI.autoDetectRenderer(800, 600, {
         backgroundColor: 0x000000,
@@ -64,6 +68,7 @@
     var graphics = new PIXI.Graphics();
     stage.addChild(graphics);
 
+    var lastBulletTime = null;
     var lastFrameTime = null;
     var startTime = lastFrameTime;
     var frames = 0;
@@ -88,6 +93,7 @@
             lastFrameTime = now - excess;
 
             updatePlayer();
+            updateBullets(lastFrameTime);
             draw();
 
             fpsDisplay.innerHTML = "" + frames + " frames, " + Math.round(frames / ((now-startTime)/1000)) + " fps";
@@ -98,7 +104,8 @@
     var controls = {
         left: false,
         right: false,
-        up: false
+        up: false,
+        fire: false
     };
 
     var keyHandler = function keyHandler(evt, pressed) {
@@ -114,6 +121,10 @@
         case 39:  // right arrow
         case 68:  // D
             controls.right = pressed;
+            break;
+        case 88:  // X
+        case 190:  // .>
+            controls.fire = pressed;
             break;
         }
     };
@@ -153,6 +164,47 @@
         while (p.y < 0) { p.y += 600; }
     };
 
+    var updateBullets = function updateBullets(now) {
+        var bs = gameState.bullets;
+        var bullet;
+
+        // fire new bullet
+        var player = gameState.player;
+        if (controls.fire) {
+            if (!lastBulletTime ||
+                lastBulletTime < now - bulletDelay) {
+                var bulletVel = [0, -bulletSpeed];
+                bulletVel = rotatePoint(bulletVel, player.rot);
+                lastBulletTime = now;
+                bullet = { x: player.x,
+                           y: player.y,
+                           vel: bulletVel,
+                           deadline: now + bulletLifespan
+                         };
+                bs.push(bullet);
+            }
+        }
+
+        // update existing bullets
+        var deleteIndices = [];
+        for (var i=0; i < bs.length; i++) {
+            bullet = bs[i];
+            bullet.x += bullet.vel[0];
+            bullet.y += bullet.vel[1];
+            while (bullet.x > 800) { bullet.x -= 800; }
+            while (bullet.x < 0) { bullet.x += 800; }
+            while (bullet.y > 600) { bullet.y -= 600; }
+            while (bullet.y < 0) { bullet.y += 600; }
+            if (now > bullet.deadline) {
+                deleteIndices.push(i);
+            }
+        }
+        // delete listed bullets
+        for (i = deleteIndices.length - 1; i >= 0; i--) {
+            bs.splice(deleteIndices[i], 1);
+        }
+    };
+
     var shapes = { player: [[0.0, -15.0],
                             [10.0, 15.0],
                             [0.0, 10.0],
@@ -174,6 +226,17 @@
             } else {
                 graphics.lineTo(point[0], point[1]);
             }
+        }
+
+        // bullets
+        graphics.lineStyle(2, 0xbbccff, 1.0);
+        for (i=0; i < gameState.bullets.length; i++) {
+            var bullet = gameState.bullets[i];
+            graphics.moveTo(bullet.x-1, bullet.y-1);
+            graphics.lineTo(bullet.x+1, bullet.y-1);
+            graphics.lineTo(bullet.x+1, bullet.y+1);
+            graphics.lineTo(bullet.x-1, bullet.y+1);
+            graphics.lineTo(bullet.x-1, bullet.y-1);
         }
 
         renderer.render(stage);
