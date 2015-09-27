@@ -92,8 +92,39 @@
     };
     requestAnimationFrame(frame);
 
+    var controls = {
+        left: false,
+        right: false,
+        up: false
+    };
+
+    var keyHandler = function keyHandler(evt, pressed) {
+        switch (evt.keyCode) {
+        case 37:  // left arrow
+        case 65:  // A
+            controls.left = pressed;
+            break;
+        case 38:  // up arrow
+        case 87:  // W
+            controls.up = pressed;
+            break;
+        case 39:  // right arrow
+        case 68:  // D
+            controls.right = pressed;
+            break;
+        }
+    };
+
+    document.onkeyup = function(e) { keyHandler(e, false); };
+    document.onkeydown = function(e) { keyHandler(e, true); };
+
     var updatePlayer = function updatePlayer() {
-        gameState.player.rot += TAU / (2.0 * frameRate);
+        if (controls.left) {
+            gameState.player.rot -= TAU / (2.0 * frameRate);
+        }
+        if (controls.right) {
+            gameState.player.rot += TAU / (2.0 * frameRate);
+        }
         while (gameState.player.rot > TAU) {
             gameState.player.rot -= TAU;
         }
