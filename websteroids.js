@@ -44,7 +44,10 @@
 
     var frameRate = 30;
     var frameInterval = 1000/frameRate;
-    var gameState = { player: { x: 400, y: 300, rot: 0 } };
+    var playerAccel = 400 / (frameRate * frameRate);  // px/frame^2
+    var playerMaxSpeed = 600 / frameRate;  // px/frame
+
+    var gameState = { player: { x: 400, y: 300, rot: 0, vel: [0.0, 0.0] } };
 
     var renderer = PIXI.autoDetectRenderer(800, 600, {
         backgroundColor: 0x000000,
@@ -119,15 +122,35 @@
     document.onkeydown = function(e) { keyHandler(e, true); };
 
     var updatePlayer = function updatePlayer() {
+        var p = gameState.player;
+
         if (controls.left) {
-            gameState.player.rot -= TAU / (2.0 * frameRate);
+            p.rot -= TAU / (2.0 * frameRate);
         }
         if (controls.right) {
-            gameState.player.rot += TAU / (2.0 * frameRate);
+            p.rot += TAU / (2.0 * frameRate);
         }
-        while (gameState.player.rot > TAU) {
-            gameState.player.rot -= TAU;
+        while (p.rot > TAU) {
+            p.rot -= TAU;
         }
+
+        if (controls.up) {
+            var rotatedAccel = rotatePoint([0, -playerAccel], p.rot);
+            p.vel[0] += rotatedAccel[0];
+            p.vel[1] += rotatedAccel[1];
+        }
+
+        if (vectorMag(p.vel) > playerMaxSpeed) {
+            p.vel = normalizeVector(p.vel, playerMaxSpeed);
+        }
+
+        // apply acceleration
+        p.x += p.vel[0];
+        while (p.x > 800) { p.x -= 800; }
+        while (p.x < 0) { p.x += 800; }
+        p.y += p.vel[1];
+        while (p.y > 600) { p.y -= 600; }
+        while (p.y < 0) { p.y += 600; }
     };
 
     var shapes = { player: [[0.0, -15.0],
@@ -163,6 +186,17 @@
 
     var translatePoint = function translatePoint(orig, vec) {
         return [orig[0] + vec[0], orig[1] + vec[1]];
+    };
+
+    var vectorMag = function vectorMag(vec) {
+        return Math.sqrt(vec[0] * vec[0] + vec[1] * vec[1]);
+    };
+
+    var normalizeVector = function normalizeVector(vec, mag) {
+        if (!mag) { mag = 1.0; }
+        var oldMag = vectorMag(vec);
+        var factor = mag / oldMag;
+        return [vec[0] * factor, vec[1] * factor];
     };
 
 })();
