@@ -216,21 +216,13 @@
 
         // player
         graphics.lineStyle(2, 0xffffff, 1.0);
-        for (var i=0; i < shapes.player.length; i++) {
-            var point = shapes.player[i];
-            point = rotatePoint(point, gameState.player.rot);
-            point = translatePoint(point, [gameState.player.x,
-                                           gameState.player.y]);
-            if (i === 0) {
-                graphics.moveTo(point[0], point[1]);
-            } else {
-                graphics.lineTo(point[0], point[1]);
-            }
-        }
+        drawShape(shapes.player, gameState.player.rot,
+                                 { x: gameState.player.x,
+                                   y: gameState.player.y });
 
         // bullets
         graphics.lineStyle(2, 0xbbccff, 1.0);
-        for (i=0; i < gameState.bullets.length; i++) {
+        for (var i=0; i < gameState.bullets.length; i++) {
             var bullet = gameState.bullets[i];
             graphics.moveTo(bullet.x-1, bullet.y-1);
             graphics.lineTo(bullet.x+1, bullet.y-1);
@@ -240,6 +232,19 @@
         }
 
         renderer.render(stage);
+    };
+
+    var drawShape = function drawShape(shape, rot, offset) {
+        for (var i=0; i < shape.length; i++) {
+            var point = shape[i];
+            point = rotatePoint(point, rot);
+            point = translatePoint(point, [offset.x, offset.y]);
+            if (i === 0) {
+                graphics.moveTo(point[0], point[1]);
+            } else {
+                graphics.lineTo(point[0], point[1]);
+            }
+        }
     };
 
     var rotatePoint = function rotatePoint(orig, theta) {
